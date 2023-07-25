@@ -1,0 +1,8 @@
+#$ -cwd -V
+#$ -l h_vmem=1G,h_rt=48:00:00
+#$ -t 1-100
+#$ -pe smp 8
+  module load test qchem
+  cd t${SGE_TASK_ID}
+  ../Code/restart.sh 8
+

@@ -1,0 +1,15 @@
+#$ -cwd -V
+#$ -l h_vmem=1G,h_rt=48:00:00
+#$ -pe smp 8
+#$ -t 1-100
+  module load test qchem
+  mkdir t${SGE_TASK_ID}
+  cp Inputs/* t${SGE_TASK_ID}
+  tail -19 Geom/Geometry.${SGE_TASK_ID}  >>t${SGE_TASK_ID}/t.ini
+  cd t${SGE_TASK_ID}
+  echo ' ' >> t.ini
+  echo '1.0 ' >> t.ini
+  echo '0.0 ' >> t.ini
+  echo ' ' >> t.ini
+cp t.ini t.0
+  ../Code/prop.sh 8
