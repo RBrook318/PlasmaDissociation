@@ -24,9 +24,7 @@ import csv
 #########################################################################################
 
 # Number of repeats 
-repeats=64
-# # Number of nodes/folders
-nodes=1
+repeats=3
 # #Number of parallel cores per folder/node (max 8)
 cores=8
 # Name of running folder 
@@ -49,30 +47,18 @@ if __name__=="__main__":
     #Check basic arguements
     if(isinstance(repeats,int)==False):
         sys.exit("Number of repeats must be an integer")
-    elif(isinstance(nodes,int)==False):
-        sys.exit("Number of folders must be an integer")
     elif(isinstance(cores,int)==False):
         sys.exit("Number of parallel cores must be an integer")
     elif(repeats<1):
         sys.exit("Not enough runs selected. Must be 1 or greater")
-    elif(nodes<1):
-        sys.exit("Not enough nodes selected. Must be 1 or greater")
-    elif(nodes>100):
-        sys.exit("Too many nodes. Maximum of 100 simultaneous submisions")
     elif(cores>8):
         sys.exit("Too many cores selected. Maximum of 8 available")
     elif(cores<1):
         sys.exit("Not enough cores selected. Must be 1 or greater")
-    elif((repeats/nodes)>5000):
-        sys.exit("Too many repeats per folder. Must be less than 500")
 
     if(restart=="NO"):
-        if((repeats%(nodes*cores))!=0):
-            sys.exit("Number of repeats must be an integer multiple of cores*folders")
-        elif(nodes*cores>101):
-            sys.exit("Total number of cores should stay below 100")
-        elif(Geom not in{0,1}):
-            sys.exit("Geometry flag msut be zero or 1")
+        if(Geom not in{0,1}):
+            sys.exit("Geometry flag must be zero or 1")
         else:
             print("Arguments checked")
             Hostname=socket.gethostname()
@@ -82,16 +68,9 @@ if __name__=="__main__":
                 HPCFLG=1 
             else:
                 HPCFLG=1
-        
-        #Might need grid altering calibration test for chlin451 bash code
-        #if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin451" ) ]]; then
-        #grdalt=1
-        #else
-        #grdalt=0
-        #fi
 
         #Makes execution folder and run folder
-        if(HPCFLG==1):
+        if(HPCFLG==1): #change this to 0 before uploading.
             if not os.path.exists("../EXEC"):
                 os.mkdir("../EXEC")
             EXDIR="../EXEC"
@@ -100,7 +79,7 @@ if __name__=="__main__":
             os.environ['LOGNAME']
             EXDIR="/nobackup/"+getpass.getuser()
 
-
+        
         if os.path.exists(EXDIR+"/"+Runfolder):
             value=input("File already exists do you want to delete it? y/n\n")
             if(value=='y'):
@@ -120,7 +99,19 @@ if __name__=="__main__":
             
         #Copies input files
         shutil.copy2("run.py",EXDIR1)
- 
+
+        for i in range(repeats):
+            path=os.path.join(EXDIR1,"run-"+str(i+1))
+            os.mkdir(EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../Geom/Geometry."+str(i+1),EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("main.py",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("get_geom.x",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("q_to_prop.x",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("prop_prelim.x",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("prop_corr.x",EXDIR1+"/run-"+str(i+1))
+
+
+            
 
         
 
@@ -145,9 +136,6 @@ if __name__=="__main__":
         # shutil.copy2("rundata.csv",EXDIR1)
         
 
-        for i in range(nodes):
-            path=os.path.join(EXDIR1,"run-"+str(i+1))
-            os.mkdir(EXDIR1+"/run-"+str(i+1))
             
 
         #Selects the right make file and executes
