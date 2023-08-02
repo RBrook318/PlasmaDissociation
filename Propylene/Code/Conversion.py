@@ -3,22 +3,30 @@ def convert_to_bohr_units(r0_angstrom):
     bohr_conversion_factor = 0.529177
     return r0_angstrom * bohr_conversion_factor
 
-def make_geometry_input(f_inp):
-    with open(f_inp, "r") as file:
+def make_geometry_input(inp):
+    with open(inp, "r") as file:
         lines = file.readlines()
 
     natom, nst = map(int, lines[0].split())
 
     # Write the geometry data to geom.in
     with open("geom.in", "w") as geom_file:
-        geom_file.write(f"{natom:2d} {nst:2d}\n")
+        # geom_file.write(f"{natom:2d} {nst:2d}\n")
 
-        for line in lines[4:]:
+        current_line = 4  # Start with the first line after the header
+
+        for _ in range(natom):
+            line = lines[current_line]
             data = line.split()
-            atom = data[0]
-            r0_angstrom = [float(val) for val in data[1:4]]
-            r0_bohr = convert_to_bohr_units(r0_angstrom)
-            geom_file.write(f"{atom:1s} {r0_bohr[0]:15.8f} {r0_bohr[1]:15.8f} {r0_bohr[2]:15.8f}\n")
+            if len(data) >= 4:  # Check if the line has at least four elements (atom and three coordinates)
+                atom = data[0]
+                r0_angstrom = [float(val) for val in data[1:4]]
+                r0_bohr = [convert_to_bohr_units(coord) for coord in r0_angstrom]  # Convert each coordinate separately
+                geom_file.write(f"{atom:1s} {r0_bohr[0]:15.8f} {r0_bohr[1]:15.8f} {r0_bohr[2]:15.8f}\n")
+            else:
+                print(f"WARNING: Skipping improperly formatted line: {line}")
+            current_line += 1
+
 
 def q_to_prop(output_file):
     with open("t.0", "r") as file:

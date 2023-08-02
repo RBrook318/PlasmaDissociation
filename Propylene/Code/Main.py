@@ -37,16 +37,25 @@ def process_geometry_file(file_path):
         last_19_lines = lines[-19:]
 
     with open("t.0", "w") as t0_file:
+        t0_file.writelines(str(natoms)+" "+str(nstates)+"\n")
+        t0_file.writelines(str(nbranch)+"\n")
+        t0_file.writelines("0 "+str(timestep)+"\n")
+        t0_file.writelines("0 5 \n")
         t0_file.writelines(last_19_lines)
-        t0_file.writelines(" ")
-        t0_file.writelines("1.0")
+        t0_file.writelines(" \n")
+        t0_file.writelines("1.0 \n")
         t0_file.writelines("0.0")
     
     with open("t.ini", "w") as tini_file:
+            tini_file.writelines(str(natoms)+" "+str(nstates)+"\n")
+            tini_file.writelines(str(nbranch)+"\n")
+            tini_file.writelines("0 "+str(timestep)+"\n")
+            tini_file.writelines("0 5 \n")
             tini_file.writelines(last_19_lines)        
-            tini_file.writelines(" ")
-            tini_file.writelines("1.0")
+            tini_file.writelines(" \n")
+            tini_file.writelines("1.0 \n")
             tini_file.writelines("0.0")
+
 
 # Helper function to write content to a file
 def write_content_to_file(file_path, content):
@@ -58,6 +67,44 @@ def file_contains_string(file_path, search_string):
     with open(file_path, "r") as file:
         return search_string in file.read()
 
+def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
+    # Read the geometry data from geom.in
+    with open(geom_file_path, "r") as geom_file:
+        geom_lines = geom_file.readlines()
+
+    # Q-Chem input file content
+    qchem_input = (
+        "$molecule\n"
+        "  0  4\n"
+        + "".join(geom_lines)
+        + "$end\n"
+        "$rem\n"
+        "    JOBTYPE             Force\n"
+        "    EXCHANGE            BHHLYP\n"
+        "    BASIS               6-31+G*\n"
+        "    UNRESTRICTED        True\n"
+        "    MAX_SCF_CYCLES      500\n"
+        "    SYM_IGNORE          True\n"
+        f"    SCF_Algorithm       {scf_algorithm}\n"  # Use the specified SCF algorithm
+        "\n"
+        "    SPIN_FLIP           True\n"
+        "    SET_Iter            500\n"
+        "\n"
+        "    MAX_CIS_CYCLES      500\n"
+        "\n"
+        "SCF_GUESS           Read\n"
+        "CIS_N_ROOTS 1\n"
+        "CIS_STATE_DERIV 1\n"
+        "$end\n"
+    )
+
+    # Write the Q-Chem input content to the output file
+    with open(output_file, "w") as qchem_file:
+        qchem_file.write(qchem_input)
+
+
+
+
 def run_qchem(ncpu):
 
     def submit_qchem_job():
@@ -65,14 +112,14 @@ def run_qchem(ncpu):
 
 
     # Prepare f.inp file
-    write_content_to_file("f.inp", f"$molecule\n{open('geom.in').read()}$end\n{open('sf_diis').read()}CIS_N_ROOTS 1\nCIS_STATE_DERIV 1\n$end\n")
+    create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS")
 
     # Submit the initial QChem job
     submit_qchem_job()
 
     if not file_contains_string("f.out", "Calculating analytic gradient of the CIS energy"):
         # Retry with a different setup if the job fails
-        write_content_to_file("f.inp", f"$molecule\n{open('geom.in').read()}$end\n{open('sf_gmd').read()}CIS_N_ROOTS 1\nCIS_STATE_DERIV 1\n$end\n")
+        create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS_GDM")
         submit_qchem_job()
 
         if not file_contains_string("f.out", "Calculating analytic gradient of the CIS energy"):
@@ -92,14 +139,17 @@ def run_qchem(ncpu):
 #  Step 1. Recieves arguements from the .sh run file
 #  Arguements recieved ncpu: number of cpus available, reps: number of the repition in order to access the right files. 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python script_name.py <number_of_cpus> <reps_number")
+    if len(sys.argv) != 7:
+        print("Usage: python script_name.py <number_of_cpus> <reps_number>")
         sys.exit(1)
 
     try:
         ncpu = int(sys.argv[1])
-        reps = int(sys.arg[2])
-        # run_qchem(ncpu)
+        reps = int(sys.argv[2])
+        natoms = int(sys.argv[3])
+        nstates = int(sys.argv[4])
+        nbranch = int(sys.argv[5])
+        timestep = int(sys.argv[6])
     except ValueError:
         print("Invalid number of CPUs. Please provide a valid integer.")
         sys.exit(1)
