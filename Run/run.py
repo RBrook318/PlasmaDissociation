@@ -65,10 +65,10 @@ if __name__=="__main__":
             elif(Hostname==("login1.arc3.leeds.ac.uk")or(Hostname==("login2.arc3.leeds.ac.uk"))):
                 HPCFLG=1 
             else:
-                HPCFLG=0
+                HPCFLG=1
 
         #Makes execution folder and run folder
-        if(HPCFLG==0): #change this to 0 before uploading.
+        if(HPCFLG==1): #change this to 0 before uploading.
             if not os.path.exists("../EXEC"):
                 os.mkdir("../EXEC")
             EXDIR="../EXEC"
@@ -145,7 +145,7 @@ if __name__=="__main__":
         f.close()
         # if(cores!=1):
         #     os.environ["OMP_NUM_THREADS"]=str(cores)
-        subprocess.call(['qsub',file1])
+        # subprocess.call(['qsub',file1])
 
     else:
         print('Probably dont run this here')

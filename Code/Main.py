@@ -108,7 +108,7 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
 def run_qchem(ncpu):
 
     def submit_qchem_job():
-        subprocess.run(["qchem", "-save", "-nt", str(ncpu), "f.inp", "f.out", "wf"], wait= True)
+        subprocess.run(["qchem", "-save", "-nt", str(ncpu), "f.inp", "f.out", "wf"])
 
 
     # Prepare f.inp file
@@ -161,10 +161,9 @@ if __name__ == "__main__":
 process_geometry_file("geometry."+str(reps)) 
 
 #  Step 3. Submit the qchem job (and the second if the first one fails)
-# subprocess.run(["../Code/get_geom.x", "t.0"],Wait =True)
+
 Conversion.make_geometry_input('t.0')
 run_qchem(ncpu)
-# subprocess.run(["../Code/q_to_prop.x"], Wait = True)
 Conversion.q_to_prop('t.0')
 
 #   Step 9. Repeat steps 6-10 until complete
@@ -174,18 +173,16 @@ for i in range(1, endstep+1):
 
     #   Step 6. Begin propagation by taking the preliminary timestep 
 
-    subprocess.run(["../Code/prop_prelim.x", "t"], Wait= True)
-   
-    # subprocess.run(["../Code/get_geom.x", "t.p"], Wait = True)
+    subprocess.run(["../Code/prop_prelim.x", "t"])
     Conversion.make_geometry_input('t.p')
     
     #  Step 7. Submit the qchem job (and the second one if it fails)
     run_qchem(ncpu)
 
     # Step 8. Translate from angstroms to bohr
-    # subprocess.run(["../Code/q_to_prop.x"], Wait = True)
+
     Conversion.q_to_prop('t.p')
-    subprocess.run(["../Code/prop_corr.x", "t"], Wait = True)
+    subprocess.run(["../Code/prop_corr.x", "t"])
 
     # Append t.1 content to t1.all
     with open("t.1", "r") as t1_file, open("t1.all", "a") as t1_all:
@@ -203,7 +200,7 @@ for i in range(1, endstep+1):
             t_diss1.write(str(i) + "\n")
     
     # Transfer the contents of t.1 to t.0 to continue the propagation
-    with open("t.1", "r") as t1_file, open("t0.all", "w") as t0_file:
+    with open("t.1", "r") as t1_file, open("t.0", "w") as t0_file:
         t0_file.write(t1_file.read())
 
 
