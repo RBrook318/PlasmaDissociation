@@ -44,9 +44,7 @@ def process_geometry_file(file_path):
         t0_file.writelines(last_19_lines)
         t0_file.writelines(" \n")
         t0_file.writelines("1.0 \n")
-        t0_file.writelines("0.0 \n")
-        t0_file.writelines(" \n")
-
+        t0_file.writelines("0.0")
     
     with open("t.ini", "w") as tini_file:
             tini_file.writelines(str(natoms)+" "+str(nstates)+"\n")
@@ -77,7 +75,7 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
     # Q-Chem input file content
     qchem_input = (
         "$molecule\n"
-        "  0  5\n"
+        "  0  4\n"
         + "".join(geom_lines)
         + "$end\n"
         "$rem\n"
@@ -94,6 +92,7 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
         "\n"
         "    MAX_CIS_CYCLES      500\n"
         "\n"
+        "SCF_GUESS           Read\n"
         "CIS_N_ROOTS 1\n"
         "CIS_STATE_DERIV 1\n"
         "$end\n"
@@ -109,7 +108,7 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
 def run_qchem(ncpu):
 
     def submit_qchem_job():
-        subprocess.run(["qchem", "-save", "-nt", str(ncpu), "f.inp", "f.out", "wf"])
+        subprocess.run(["qchem", "-save", "-nt", str(ncpu), "f.inp", "f.out", "wf"], wait= True)
 
 
     # Prepare f.inp file
@@ -140,7 +139,7 @@ def run_qchem(ncpu):
 #  Step 1. Recieves arguements from the .sh run file
 #  Arguements recieved ncpu: number of cpus available, reps: number of the repition in order to access the right files. 
 if __name__ == "__main__":
-    if len(sys.argv) != 7:
+    if len(sys.argv) != 8:
         print("Usage: python script_name.py <number_of_cpus> <reps_number>")
         sys.exit(1)
 
@@ -151,6 +150,7 @@ if __name__ == "__main__":
         nstates = int(sys.argv[4])
         nbranch = int(sys.argv[5])
         timestep = int(sys.argv[6])
+        endstep = int(sys.argv[7])
     except ValueError:
         print("Invalid number of CPUs. Please provide a valid integer.")
         sys.exit(1)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
 #  Step 2. Read in geometries from the geom input file
 #  Needs to take in a geometry.reps file and makes the output t.ini and t.0 file.
 
-process_geometry_file("Geometry."+str(reps)) 
+process_geometry_file("geometry."+str(reps)) 
 
 #  Step 3. Submit the qchem job (and the second if the first one fails)
 # subprocess.run(["../Code/get_geom.x", "t.0"],Wait =True)
@@ -169,13 +169,12 @@ Conversion.q_to_prop('t.0')
 
 #   Step 9. Repeat steps 6-10 until complete
 
-for i in range(1, 2501):
+for i in range(1, endstep+1):
     # os.rename("t.1", "t.0") NEEDS TO BE AT THE END OF THE LOOP?
 
     #   Step 6. Begin propagation by taking the preliminary timestep 
-    cwd =os.getcwd()
-    print(os.listdir(cwd))
-    subprocess.run(["./prop_prelim.x", "t"])
+
+    subprocess.run(["../Code/prop_prelim.x", "t"], Wait= True)
    
     # subprocess.run(["../Code/get_geom.x", "t.p"], Wait = True)
     Conversion.make_geometry_input('t.p')
@@ -186,7 +185,7 @@ for i in range(1, 2501):
     # Step 8. Translate from angstroms to bohr
     # subprocess.run(["../Code/q_to_prop.x"], Wait = True)
     Conversion.q_to_prop('t.p')
-    subprocess.run(["./prop_corr.x", "t"])
+    subprocess.run(["../Code/prop_corr.x", "t"], Wait = True)
 
     # Append t.1 content to t1.all
     with open("t.1", "r") as t1_file, open("t1.all", "a") as t1_all:
@@ -202,5 +201,9 @@ for i in range(1, 2501):
         # os.rmdir("wf")
         with open("t.diss1", "a") as t_diss1:
             t_diss1.write(str(i) + "\n")
+    
+    # Transfer the contents of t.1 to t.0 to continue the propagation
+    with open("t.1", "r") as t1_file, open("t0.all", "w") as t0_file:
+        t0_file.write(t1_file.read())
 
 
