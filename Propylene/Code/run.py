@@ -24,13 +24,13 @@ import csv
 #########################################################################################
 
 # Number of repeats 
-repeats=1
+repeats=100
 # #Number of parallel cores per folder/node (max 8)
 cores=8
 # Name of running folder 
 # Default : <method>-<system>-<random number> ie CCS-HP-31254
 # Otherwise:  <method>-<system>-<runfolder string>
-Runfolder='Propylene-test'
+Runfolder='Propylenepy-HPC'
 # Restart Flag 
 restart = 'NO'
 # Geometry flag
@@ -75,10 +75,10 @@ if __name__=="__main__":
             elif(Hostname==("login1.arc3.leeds.ac.uk")or(Hostname==("login2.arc3.leeds.ac.uk"))):
                 HPCFLG=1 
             else:
-                HPCFLG=1
+                HPCFLG=0
 
         #Makes execution folder and run folder
-        if(HPCFLG==1): #change this to 0 before uploading.
+        if(HPCFLG==0): #change this to 0 before uploading.
             if not os.path.exists("../EXEC"):
                 os.mkdir("../EXEC")
             EXDIR="../EXEC"
@@ -112,11 +112,12 @@ if __name__=="__main__":
             path=os.path.join(EXDIR1,"run-"+str(i+1))
             os.mkdir(EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Geom/Geometry."+str(i+1),EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("main.py",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("Main.py",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("Conversion.py",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("prop_prelim.x",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("prop_corr.x",EXDIR1+"/run-"+str(i+1))
-        
+            subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_prelim.x'])
+            subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_corr.x'])
 
             subprocess.run(['chmod', 'u+x', 'Main.py'])
                 
@@ -124,7 +125,9 @@ if __name__=="__main__":
         os.chdir(EXDIR1)
         EXDIR1=os.getcwd()
 
-
+        # for i in range(repeats):
+        #     path=os.path.join(EXDIR1,"run-"+str(i+1))
+          
 
        
 
@@ -142,7 +145,7 @@ if __name__=="__main__":
         file1="Plasma"+str(number)+".sh"
         f=open(file1,"w")
         f.write("#$ -cwd -V \n")
-        f.write("#$ -l  h_vmem=1G, h_rt=48:00:00 \n")
+        f.write("#$ -l h_vmem=1G,h_rt=48:00:00 \n")
         f.write("#$ -pe smp "+str(cores)+" \n") #Use shared memory parallel environemnt 
         f.write("#$ -t 1-"+str(repeats)+" \n")
         f.write("module load mkl \n")
@@ -150,11 +153,11 @@ if __name__=="__main__":
         f.write("module load anaconda \n")
         f.write("source actviate base \n")
         f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
-        f.write(" python main.py "+str(cores)+" "+str(repeats)+" "+str(Atoms)+" "+str(States)+" "+str(Branch)+" "+str(Timestep))
+        f.write(" python Main.py "+str(cores)+" "+"$SGE_TASK_ID"+" "+str(Atoms)+" "+str(States)+" "+str(Branch)+" "+str(Timestep))
         f.close()
         # if(cores!=1):
         #     os.environ["OMP_NUM_THREADS"]=str(cores)
-        # subprocess.call(['qsub',file1])
+        subprocess.call(['qsub',file1])
 
     else:
         print('Probably dont run this here')
