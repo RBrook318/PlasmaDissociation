@@ -1,0 +1,16 @@
+#$ -cwd -V
+#$ -l h_vmem=1G,h_rt=48:00:00
+#$ -pe smp 8
+#$ -t 1-100
+  module load test qchem
+  module load intel # load necessary modules
+  mkdir t${SGE_TASK_ID} #make a directory for each separate tracjectory
+  cp Inputs/* t${SGE_TASK_ID} #Copies the 3 templates over to the trajectoy folder
+  tail -19 Geom/Geometry.${SGE_TASK_ID}  >>t${SGE_TASK_ID}/t.ini # Copies over the initial geometry for the same number as the tracjectory 
+  cd t${SGE_TASK_ID} #Changes the directory into the trajectory 
+  echo ' ' >> t.ini # Adds the Ehrenfest amplitudes to the intial file
+  echo '1.0 ' >> t.ini
+  echo '0.0 ' >> t.ini
+  echo ' ' >> t.ini
+cp t.ini t.0
+  python main.py 8 # Calls the main propagation script.
