@@ -17,32 +17,22 @@ import random
 import shutil
 import glob
 import csv
-
+import inputs
 
 #########################################################################################
 #                              VARIABLES TO SET FOR SIMULATION                          #
 #########################################################################################
 
 # Number of repeats 
-repeats=100
+repeats=2
 # #Number of parallel cores per folder/node (max 8)
 cores=8
 # Name of running folder 
 # Default : <method>-<system>-<random number> ie CCS-HP-31254
 # Otherwise:  <method>-<system>-<runfolder string>
-Runfolder='Propylenepy-HPC'
+Runfolder='Propylene-test'
 # Restart Flag 
 restart = 'NO'
-# Geometry flag
-Geom = 1
-# Number of atoms
-Atoms = 9
-# Number of states
-States = 2
-# Branching number
-Branch = 0
-# Timestep
-Timestep = 10
 
 #########################################################################################
 #                                   END OF INPUTS                                       #
@@ -65,7 +55,7 @@ if __name__=="__main__":
         sys.exit("Not enough cores selected. Must be 1 or greater")
 
     if(restart=="NO"):
-        if(Geom not in{0,1}):
+        if(inputs.Geom not in{0,1}):
             sys.exit("Geometry flag must be zero or 1")
         else:
             print("Arguments checked")
@@ -111,23 +101,21 @@ if __name__=="__main__":
         for i in range(repeats):
             path=os.path.join(EXDIR1,"run-"+str(i+1))
             os.mkdir(EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("../Geom/Geometry."+str(i+1),EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("Main.py",EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("Conversion.py",EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("prop_prelim.x",EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("prop_corr.x",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../"+inputs.Molecule+"/Geom/Geometry."+str(i+1),EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../Code/Main.py",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../Code/Conversion.py",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../Code/prop_prelim.x",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../Code/prop_corr.x",EXDIR1+"/run-"+str(i+1))
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_prelim.x'])
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_corr.x'])
 
-            subprocess.run(['chmod', 'u+x', 'Main.py'])
                 
 
         os.chdir(EXDIR1)
         EXDIR1=os.getcwd()
 
-        # for i in range(repeats):
-        #     path=os.path.join(EXDIR1,"run-"+str(i+1))
-          
+
+
 
        
 
@@ -153,7 +141,7 @@ if __name__=="__main__":
         f.write("module load anaconda \n")
         f.write("source actviate base \n")
         f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
-        f.write(" python Main.py "+str(cores)+" "+"$SGE_TASK_ID"+" "+str(Atoms)+" "+str(States)+" "+str(Branch)+" "+str(Timestep))
+        f.write(" python Main.py "+str(cores)+" "+str(repeats)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps))
         f.close()
         # if(cores!=1):
         #     os.environ["OMP_NUM_THREADS"]=str(cores)
