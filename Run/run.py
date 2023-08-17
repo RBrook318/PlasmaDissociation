@@ -65,10 +65,10 @@ if __name__=="__main__":
             elif(Hostname==("login1.arc3.leeds.ac.uk")or(Hostname==("login2.arc3.leeds.ac.uk"))):
                 HPCFLG=1 
             else:
-                HPCFLG=1
+                HPCFLG=0
 
         #Makes execution folder and run folder
-        if(HPCFLG==1): #change this to 0 before uploading.
+        if(HPCFLG==0): #change this to 0 before uploading.
             if not os.path.exists("../EXEC"):
                 os.mkdir("../EXEC")
             EXDIR="../EXEC"
@@ -141,7 +141,7 @@ if __name__=="__main__":
         f.write("module load anaconda \n")
         f.write("source actviate base \n")
         f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
-        f.write(" python Main.py "+str(cores)+" "+str(repeats)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps))
+        f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(repeats)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps))
         f.close()
         # if(cores!=1):
         #     os.environ["OMP_NUM_THREADS"]=str(cores)

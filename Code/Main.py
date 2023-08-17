@@ -75,7 +75,7 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
     # Q-Chem input file content
     qchem_input = (
         "$molecule\n"
-        "  0  4\n"
+        "  0  5\n"
         + "".join(geom_lines)
         + "$end\n"
         "$rem\n"
@@ -92,7 +92,6 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
         "\n"
         "    MAX_CIS_CYCLES      500\n"
         "\n"
-        "SCF_GUESS           Read\n"
         "CIS_N_ROOTS 1\n"
         "CIS_STATE_DERIV 1\n"
         "$end\n"
@@ -158,7 +157,7 @@ if __name__ == "__main__":
 #  Step 2. Read in geometries from the geom input file
 #  Needs to take in a geometry.reps file and makes the output t.ini and t.0 file.
 
-process_geometry_file("geometry."+str(reps)) 
+process_geometry_file("Geometry."+str(reps)) 
 
 #  Step 3. Submit the qchem job (and the second if the first one fails)
 
