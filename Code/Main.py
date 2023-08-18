@@ -44,8 +44,9 @@ def process_geometry_file(file_path):
         t0_file.writelines(last_19_lines)
         t0_file.writelines(" \n")
         t0_file.writelines("1.0 \n")
-        t0_file.writelines("0.0")
-    
+        t0_file.writelines("0.0 \n")
+        t0_file.writelines(" \n")
+
     with open("t.ini", "w") as tini_file:
             tini_file.writelines(str(natoms)+" "+str(nstates)+"\n")
             tini_file.writelines(str(nbranch)+"\n")
@@ -54,7 +55,8 @@ def process_geometry_file(file_path):
             tini_file.writelines(last_19_lines)        
             tini_file.writelines(" \n")
             tini_file.writelines("1.0 \n")
-            tini_file.writelines("0.0")
+            tini_file.writelines("0.0 \n")
+            tini_file.writelines(" \n")
 
 
 # Helper function to write content to a file
@@ -138,41 +140,62 @@ def run_qchem(ncpu):
 #  Step 1. Recieves arguements from the .sh run file
 #  Arguements recieved ncpu: number of cpus available, reps: number of the repition in order to access the right files. 
 if __name__ == "__main__":
-    if len(sys.argv) != 8:
-        print("Usage: python script_name.py <number_of_cpus> <reps_number>")
+    if len(sys.argv) != 9:
+        print("Usage: python script_name.py <reps> <noofcpus> <natoms> <nstates>")
         sys.exit(1)
 
     try:
-        ncpu = int(sys.argv[1])
-        reps = int(sys.argv[2])
+        reps= int(sys.argv[1])
+        ncpu = int(sys.argv[2])
         natoms = int(sys.argv[3])
         nstates = int(sys.argv[4])
         nbranch = int(sys.argv[5])
         timestep = int(sys.argv[6])
         endstep = int(sys.argv[7])
+        restart = str(sys.argv[8])
     except ValueError:
         print("Invalid number of CPUs. Please provide a valid integer.")
         sys.exit(1)
 
 #  Step 2. Read in geometries from the geom input file
 #  Needs to take in a geometry.reps file and makes the output t.ini and t.0 file.
+if(restart == 'NO'):
+    process_geometry_file("Geometry."+str(reps)) 
 
-process_geometry_file("Geometry."+str(reps)) 
+    #  Step 3. Submit the qchem job (and the second if the first one fails)
 
-#  Step 3. Submit the qchem job (and the second if the first one fails)
+    Conversion.make_geometry_input('t.0')
+    run_qchem(ncpu)
+    # Conversion.q_to_prop('t.0')
+    command = ["./q_to_prop.x"]
+    with open("t.0", "a") as output_file:
+        try:
+            # Execute the command as a subprocess
+            subprocess.run(command, stdout=output_file, check=True)
+            print("Command executed successfully.")
+        except subprocess.CalledProcessError as e:
+            print("Command execution failed with error:", e)
+    with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
+        t1_all.write(t0_file.read())
+        t1_all.write("---------------------------------------------------\n")
+    startstep = 1
+elif (restart == 'YES'):
+    with open('t.0', 'r') as file:
+        lines = file.readlines()
+        third_row = lines[2].strip().split()
+        startstep = float(third_row[0])
 
-Conversion.make_geometry_input('t.0')
-run_qchem(ncpu)
-Conversion.q_to_prop('t.0')
+
+
 
 #   Step 9. Repeat steps 6-10 until complete
 
-for i in range(1, endstep+1):
+for i in range(startstep, endstep+1):
     # os.rename("t.1", "t.0") NEEDS TO BE AT THE END OF THE LOOP?
 
     #   Step 6. Begin propagation by taking the preliminary timestep 
 
-    subprocess.run(["../Code/prop_prelim.x", "t"])
+    subprocess.run(["./prop_prelim.x", "t"])
     Conversion.make_geometry_input('t.p')
     
     #  Step 7. Submit the qchem job (and the second one if it fails)
@@ -180,8 +203,17 @@ for i in range(1, endstep+1):
 
     # Step 8. Translate from angstroms to bohr
 
-    Conversion.q_to_prop('t.p')
-    subprocess.run(["../Code/prop_corr.x", "t"])
+    # Conversion.q_to_prop('t.p')
+    command = ["./q_to_prop.x"]
+    with open("t.p", "a") as output_file:
+        try:
+            # Execute the command as a subprocess
+            subprocess.run(command, stdout=output_file, check=True)
+            print("Command executed successfully.")
+        except subprocess.CalledProcessError as e:
+            print("Command execution failed with error:", e)
+    subprocess.run(["./prop_corr.x", "t"])
+    
 
     # Append t.1 content to t1.all
     with open("t.1", "r") as t1_file, open("t1.all", "a") as t1_all:
