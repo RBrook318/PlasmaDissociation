@@ -24,7 +24,7 @@ import inputs
 #########################################################################################
 
 # Number of repeats 
-repeats=2
+repeats=1
 # #Number of parallel cores per folder/node (max 8)
 cores=8
 # Name of running folder 
@@ -120,9 +120,17 @@ if __name__=="__main__":
 
         os.chdir(EXDIR1)
         EXDIR1=os.getcwd()
+    elif(restart=='YES'):
+        print("Arguments checked")
+        Hostname=socket.gethostname()
+        if(Hostname==("login1.arc4.leeds.ac.uk")or(Hostname==("login2.arc4.leeds.ac.uk"))):
+            HPCFLG=1
+        elif(Hostname==("login1.arc3.leeds.ac.uk")or(Hostname==("login2.arc3.leeds.ac.uk"))):
+            HPCFLG=1 
+        else:
+            HPCFLG=0
 
-
-
+        EXDIR1 = os.getcwd()
 
        
 

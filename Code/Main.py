@@ -190,7 +190,7 @@ elif (restart == 'YES'):
 
 #   Step 9. Repeat steps 6-10 until complete
 
-for i in range(startstep, endstep+1):
+for i in range(int(startstep), endstep+1):
     # os.rename("t.1", "t.0") NEEDS TO BE AT THE END OF THE LOOP?
 
     #   Step 6. Begin propagation by taking the preliminary timestep 
