@@ -28,17 +28,55 @@ for line in lines:
             atom_symbol, coords = match.group(1), match.group(2)
             x, y, z = map(float, coords.split())
             current_atoms.append((atom_symbol, x, y, z))
+
 bond_distance_threshold = 3  # Adjust this threshold based on your molecule
 bonded_atoms = []
+
 for step in time_steps:
     step_bonds = []
-    for i, atom1 in enumerate(step[1]):
-        for j, atom2 in enumerate(step[1]):
-            if i != j:
-                distance = ((atom1[1] - atom2[1])**2 + (atom1[2] - atom2[2])**2 + (atom1[3] - atom2[3])**2)**0.5
-                if distance < bond_distance_threshold:
-                    step_bonds.append((i, j))
+    carbon_atoms = [(i, atom) for i, atom in enumerate(step[1]) if atom[0] == 'C']
+    hydrogen_atoms = [(i, atom) for i, atom in enumerate(step[1]) if atom[0] == 'H']
+
+    # Bond hydrogen atoms to the closest carbon atom
+    for hydrogen_idx, hydrogen_atom in hydrogen_atoms:
+        h_coords = hydrogen_atom[1:]
+
+        # Find the closest carbon atom to the hydrogen atom
+        closest_carbon_idx = None
+        min_distance = float('inf')
+        for carbon_idx, carbon_atom in carbon_atoms:
+            c_coords = carbon_atom[1:]
+            distance = ((h_coords[0] - c_coords[0])**2 +
+                        (h_coords[1] - c_coords[1])**2 +
+                        (h_coords[2] - c_coords[2])**2)**0.5
+            if distance < min_distance:
+                min_distance = distance
+                closest_carbon_idx = carbon_idx
+        
+        # Check if the closest carbon is within the bond distance threshold
+        if min_distance < bond_distance_threshold:
+            step_bonds.append((closest_carbon_idx, hydrogen_idx))
+
+    # Bond carbon atoms to each other if within the bond distance threshold
+        # Bond carbon atoms to each other if within the bond distance threshold
+        for i, carbon1 in carbon_atoms:
+            for j, carbon2 in carbon_atoms:
+                if i < j and not ((i == 0 and j == 6)):
+
+                    c1_coords = carbon1[1:]
+                    c2_coords = carbon2[1:]
+                    distance = ((c1_coords[0] - c2_coords[0])**2 +
+                                (c1_coords[1] - c2_coords[1])**2 +
+                                (c1_coords[2] - c2_coords[2])**2)**0.5
+                    if distance < bond_distance_threshold:
+                        step_bonds.append((i, j))
+                        # print('after threshold', i,j)
+ 
+    
     bonded_atoms.append(step_bonds)
+
+
+
 if current_time_step is not None:
     time_steps.append((current_time_step, current_atoms))
 
@@ -72,7 +110,7 @@ def update_plot(frame):
     ax.set_xlim(-axis_range, axis_range)
     ax.set_ylim(-axis_range, axis_range)
     ax.set_zlim(-axis_range, axis_range)
-
+    ax.view_init(elev=30, azim=1)  # Adjust the angles as needed
 
 
 
@@ -81,12 +119,12 @@ ax = fig.add_subplot(111, projection='3d')
 
 # Specify the range of frames (0 to 599 for the first 600 time steps)
 start_frame = 0
-end_frame = 599
+end_frame = 3000
 
-animation = FuncAnimation(fig, update_plot, frames=range(start_frame, end_frame+1), interval=100)
+animation = FuncAnimation(fig, update_plot, frames=range(start_frame, end_frame), interval=100)
 
 # Save the animation as an MP4 video
-animation.save('Trajectory1.gif', writer='pillow', fps=100)  # Adjust fps as needed
+animation.save('Trajectory50.gif', writer='pillow', fps=2000)  # Adjust fps as needed
 
 # plt.show()
 
