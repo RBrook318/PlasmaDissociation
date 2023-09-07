@@ -88,12 +88,8 @@ if __name__=="__main__":
         os.mkdir(EXDIR+"/"+Runfolder)
         
         EXDIR1=EXDIR+"/"+Runfolder  
+        
 
-        mcerunf=os.getcwd()
-        # result=open(EXDIR1+"/result.sh","w")
-        # result.write("python "+mcerunf+"/collate.py $PWD "+(str(repeats))+" "+str(nodes)+" '"+Runfolder+"' "+(str(HPCFLG))+" '"+prop+"'")
-        # result.close()
-        # subprocess.run(['chmod', 'u+x', EXDIR1+'/result.sh'])
             
         #Copies input files
         shutil.copy2("run.py",EXDIR1)
@@ -104,7 +100,7 @@ if __name__=="__main__":
         for i in range(repeats):
             path=os.path.join(EXDIR1,"run-"+str(i+1))
             os.mkdir(EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("../"+inputs.Molecule+"/Geom/Geometry."+str(i+1),EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../"+inputs.Molecule+"/Geom/Geometry."+str(i+inputs.Geom_start),EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/Main.py",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/Conversion.py",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/prop_prelim.x",EXDIR1+"/run-"+str(i+1))
@@ -151,7 +147,7 @@ if __name__=="__main__":
         f.write("module load anaconda \n")
         f.write("source actviate base \n")
         f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
-        f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart))
+        f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart)+' '+str(inputs.Geom_start))
         f.close()
         # if(cores!=1):
         #     os.environ["OMP_NUM_THREADS"]=str(cores)

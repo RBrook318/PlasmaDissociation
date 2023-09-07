@@ -1,3 +1,6 @@
+import numpy as np 
+import re
+import math 
 def convert_to_bohr_units(r0_angstrom):
     # Convert coordinates from Angstrom to Bohr units
     bohr_conversion_factor = 0.529177
@@ -11,7 +14,7 @@ def make_geometry_input(inp):
 
     # Write the geometry data to geom.in
     with open("geom.in", "w") as geom_file:
-        # geom_file.write(f"{natom:2d} {nst:2d}\n")
+        geom_file.write(f"{natom:2d} {nst:2d}\n")
 
         current_line = 4  # Start with the first line after the header
 
@@ -29,57 +32,82 @@ def make_geometry_input(inp):
 
 
 def q_to_prop(output_file):
-    with open("t.0", "r") as file:
-        lines = file.readlines()
+    try:
+        with open('t.0', 'r') as file:
+            first_line = file.readline().strip()
+            natoms = int(first_line.split()[0])
+            nst = int(first_line.split()[1])
+            # print(natoms,nst)
+    except (FileNotFoundError, ValueError, IndexError):
+        print("Error reading the number of atoms from the file.")
+        return None
+    ndim = 3*natoms
+    l1t = ' Excited state   1: excitation energy (eV) ='
+    l2t = ' Gradient of the state energy (including CIS Excitation Energy)'
 
-    natom, nst = map(int, lines[0].split())
-
-    if nst > 9:
-        print("ERROR: Number of states > 9")
-        return
-
-    ndim = 3 * natom
-    c = [[[0.0 for _ in range(ndim)] for _ in range(nst)] for _ in range(nst)]
-    f = [[0.0 for _ in range(ndim)] for _ in range(nst)]
-    e = [0.0 for _ in range(nst)]
-
-    l1t = " Excited state   1: excitation energy (eV) ="
-    l2t = " Gradient of the state energy (including CIS Excitation Energy)"
-
-    with open("f.out", "r") as f_out_file:
-        f_lines = f_out_file.readlines()
-
-        for line in f_lines:
-            if line.strip() == l1t:
-                e[0] = float(f_lines[f_lines.index(line) + 1].strip())
+    with open('f.out', 'r') as file:
+        f = np.zeros((1,nst*ndim))
+        e= np.zeros(nst)
+        C = np.zeros((1,ndim))
+        l1_found = False
+        l2_found = False
+        found_target = False
+        for line in file:
+            if found_target:
+                # Read the line below the target line
+                data_line = line.strip()
+                match = re.search(r'-?\d+\.\d+', data_line)
+                if match:
+                    e[0] = float(match.group())
+                else:
+                    print("Number not found in the line.")
                 break
-
-        for line in f_lines:
-            if line.strip() == l2t:
-                j = 0
-                for j in range(natom // 6 + 1):
-                    iend = min((j + 1) * 6, natom)
-                    _, fx, _, fy, _, fz = map(float, f_lines[f_lines.index(line) + 1 + j * 4].split())
-                    f[j * 18][0] = -fx
-                    f[j * 18 + 1][0] = -fy
-                    f[j * 18 + 2][0] = -fz
-                break
-
-    # Write electronic structure data to the output file
-    with open(output_file, "a") as out_file:
-        for i in range(nst):
-            out_file.write(f"{e[i]:25.16f} {i + 1:8d}\n")
-
-        out_file.write("\n")
-        for i in range(nst):
-            for j in range(ndim):
-                out_file.write(f"{f[i][j]:25.16f} {i + 1:8d} {j + 1:8d}\n")
-
-        out_file.write("\n")
-        for i in range(nst - 1):
-            for k in range(i + 1, nst):
-                for j in range(ndim):
-                    out_file.write(f"{c[i][k][j]:25.16f} {i + 1:8d} {k + 1:8d} {j + 1:8d}\n")
+            if l1t in line:
+                found_target = True
+        
+        found_target = False
+        lines_read = 0 
+        skip_counter = 0 
+        lines_to_read = 4*(math.ceil(natoms/6))-1
+        start_index = 0
+        for line in file:
+            if found_target and lines_read < lines_to_read:
+                if skip_counter != 3:  # Skip every fourth line
+                    data_line = line.strip()
+                    lines_read += 1
+                    start_index += 1
+                    # print('lines_read', lines_read)
+                    parts = data_line.split("  ")
+                    # print(parts)
+                    m = start_index
+                    for j in range(1,len(parts)):
+                        f[0,m-1] = parts[j]
+                        # print(m)
+                        m = m+3
+                if skip_counter == 3: 
+                    lines_read += 1
+                    start_index = 6*start_index
+                skip_counter = (skip_counter + 1) % 4
+            if l2t in line:
+                found_target = True
+                # Skip the header line
+                next(file)
+        f = -f
+        f = np.where(f == -0.0, 0.0, f)
+        with open(output_file, "a") as out:
+            out.write(" \n")
+            out.write(" \n")
+            for i in range(nst):
+                out.write(f'{e[i]:.16e} {i:8d}\n')
+            out.write(" \n")
+            for i in range(2*ndim):
+                if i<ndim:
+                    out.write(f'{f[0, i]:.16e} 1 {i}\n')
+                if i>=ndim:
+                    out.write(f'{f[0, i]:.16e} 2 {i-ndim}\n')
+            out.write(" \n")
+            for i in range(ndim):
+                out.write(f'{C[0, i]:.16e} 1 2 {i+1}\n')
 
 
 

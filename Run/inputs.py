@@ -16,3 +16,5 @@ Branch = 0
 Timestep = 10
 # No of timesteps
 Tot_timesteps = 2500
+# Starting geometry index
+Geom_start = 1

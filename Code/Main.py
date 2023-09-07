@@ -153,6 +153,7 @@ if __name__ == "__main__":
         timestep = int(sys.argv[6])
         endstep = int(sys.argv[7])
         restart = str(sys.argv[8])
+        geom_start = int(sys.arg[9])
     except ValueError:
         print("Invalid number of CPUs. Please provide a valid integer.")
         sys.exit(1)
@@ -160,7 +161,7 @@ if __name__ == "__main__":
 #  Step 2. Read in geometries from the geom input file
 #  Needs to take in a geometry.reps file and makes the output t.ini and t.0 file.
 if(restart == 'NO'):
-    process_geometry_file("Geometry."+str(reps)) 
+    process_geometry_file("Geometry."+str(reps+geom_start-1)) 
 
     #  Step 3. Submit the qchem job (and the second if the first one fails)
 
@@ -183,7 +184,7 @@ elif (restart == 'YES'):
     with open('t.0', 'r') as file:
         lines = file.readlines()
         third_row = lines[2].strip().split()
-        startstep = float(third_row[0])
+        startstep = float(third_row[0])/timestep
 
 
 
