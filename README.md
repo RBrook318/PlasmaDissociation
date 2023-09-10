@@ -35,7 +35,30 @@ Inside Run.py, there are options for:
 
   - Restart Flag: Whether this run is being started for the first time or whether to restart a failed or timed-out run.
 
-If restart flag is 0, then this the first run for a given run-folder, and the run-folder is created within nobackup and the approiate geometry file is copied into each repeat folder. The bash run file is then created and submitted.
+If restart flag is 0, then this the first run for a given run-folder, and the run-folder is created within nobackup and the approiate geometry file is copied into each repeat folder. The bash run file is then created and submitted. The geometry file should be of the form: 
+
+           9
+C    -0.0151530299    -1.7245140076     0.0902602226
+H     1.6599788666    -3.0194928646     1.4945089817
+H     1.1987202168    -2.1157917976    -2.2039279938
+H    -2.1853125095    -2.7259137630    -0.0852743164
+C    -0.0296703614     1.0355875492     1.0148756504
+H    -0.0190874841     0.9638609290     2.7984864712
+C     0.0215299744     3.0698873997    -0.5709819794
+H     0.2935736775     3.2048637867    -2.3483188152
+H    -0.0668819323     5.6954283714     0.5106948614
+ momenta
+  -1.340299      -1.839603       11.11354    
+   3.765748       18.21791      -9.453912    
+ -0.3961563       14.19139      -5.992531    
+  -3.157275      -9.615326       4.598836    
+  0.7770783      0.4139509      -14.58165    
+  -9.946272      -15.44369       6.820938    
+  -3.426562      -4.431175       3.883945    
+   8.392735       1.632011       3.478122    
+   15.20431       11.46569     -0.5870720   
+
+This file is geom.1 for the propylene molecule. 
 
 Chapter 2: Propagation 
 
