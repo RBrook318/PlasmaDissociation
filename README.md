@@ -84,8 +84,12 @@ Chapter 3: Results processing
 At the end of propagation, for each repeat there will be a run-x folder, which contains all information calculated throughout the propagation. Running Result.py transfers analysis.x into each run-x folder, and creates t.xyz and output.xyz, which are condensed forms of the geometry of each timestep. The program then makes dissociation.out in each run-x folder, which states if and when each bond exceeeds a given distance, where each bond is specified in a provided bond array. 
 
 The program collate.py then goes through each dissociation.out within each run-x folder and creates a collateddissociation.out that contains all instances of bonds breaking across all repeats. Collate.py is also used to separate the collated file into files based on both bond type and each individual bond, which can then be plotted to display results.
+<img width="420" alt="image" src="https://github.com/cm18rb/PlasmaDissociation/assets/92863384/4275762e-0842-445a-9bca-60008edb5ada">
+<img width="435" alt="image" src="https://github.com/cm18rb/PlasmaDissociation/assets/92863384/9fd4c17b-b8ee-4806-8cd5-751d4c44209f">
 
 Animation.py can be used with an input of output.xyz in order to generate a gif of the trajectory. 
+
+![image](https://github.com/cm18rb/PlasmaDissociation/assets/92863384/75100de8-a1c9-459e-b98e-babf674e259a)
 
 
 
