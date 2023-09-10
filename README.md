@@ -36,3 +36,24 @@ Inside Run.py, there are options for:
   - Restart Flag: Whether this run is being started for the first time or whether to restart a failed or timed-out run.
 
 If restart flag is 0, then this the first run for a given run-folder, and the run-folder is created within nobackup and the approiate geometry file is copied into each repeat folder. The bash run file is then created and submitted.
+
+Chapter 2: Propagation 
+
+The main.py file has a step by step process 
+#  Step 1. Recieves arguements from the run.sh file and sets variables 
+
+#  Step 2. Read in geometries from the geom input file
+
+#  Step 3. Submit the initial qchem job (and the second if the first one fails) to generate forces before propagation 
+
+#  Step 4. Begin propagation by taking the preliminary timestep (uses homemade nuclear propagation code prop_prelim.x)
+ 
+#  Step 5. Submit the qchem job (and the second one if it fails) to find the forces of the new geometry 
+
+#  Step 6. Use the forces from both the begining of the timestep and the prelimary timestep to recalculate momentum 
+
+#  Step 7. Repeat step 4-6 until the end timestep is reached. 
+
+
+
+
