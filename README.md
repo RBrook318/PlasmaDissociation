@@ -58,7 +58,7 @@ If restart flag is 0, then this the first run for a given run-folder, and the ru
        8.392735       1.632011       3.478122    
        15.20431       11.46569     -0.5870720   
 
-This file is geom.1 for the propylene molecule. 
+This exmaple is taken from geom.1 for the propylene molecule. 
 
 Chapter 2: Propagation 
 
