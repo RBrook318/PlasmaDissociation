@@ -40,19 +40,30 @@ If restart flag is 0, then this the first run for a given run-folder, and the ru
 Chapter 2: Propagation 
 
 The main.py file has a step by step process 
-#  Step 1. Recieves arguements from the run.sh file and sets variables 
+Step 1. Recieves arguements from the run.sh file and sets variables 
 
-#  Step 2. Read in geometries from the geom input file
+Step 2. Read in geometries from the geom input file
 
-#  Step 3. Submit the initial qchem job (and the second if the first one fails) to generate forces before propagation 
+Step 3. Submit the initial qchem job (and the second if the first one fails) to generate forces before propagation 
 
-#  Step 4. Begin propagation by taking the preliminary timestep (uses homemade nuclear propagation code prop_prelim.x)
+Step 4. Begin propagation by taking the preliminary timestep (uses homemade nuclear propagation code prop_prelim.x)
  
-#  Step 5. Submit the qchem job (and the second one if it fails) to find the forces of the new geometry 
+Step 5. Submit the qchem job (and the second one if it fails) to find the forces of the new geometry 
 
-#  Step 6. Use the forces from both the begining of the timestep and the prelimary timestep to recalculate momentum 
+Step 6. Use the forces from both the begining of the timestep and the prelimary timestep to recalculate momentum 
 
-#  Step 7. Repeat step 4-6 until the end timestep is reached. 
+Step 7. Repeat step 4-6 until the end timestep is reached. 
+
+The file conversion.py is used to move and transform data between the output from the molecular dynamic code and the output of QChem. 
+
+Chapter 3: Results processing 
+
+At the end of propagation, for each repeat there will be a run-x folder, which contains all information calculated throughout the propagation. Running Result.py transfers analysis.x into each run-x folder, and creates t.xyz and output.xyz, which are condensed forms of the geometry of each timestep. The program then makes dissociation.out in each run-x folder, which states if and when each bond exceeeds a given distance, where each bond is specified in a provided bond array. 
+
+The program collate.py then goes through each dissociation.out within each run-x folder and creates a collateddissociation.out that contains all instances of bonds breaking across all repeats. Collate.py is also used to separate the collated file into files based on both bond type and each individual bond, which can then be plotted to display results.
+
+Animation.py can be used with an input of output.xyz in order to generate a gif of the trajectory. 
+
 
 
 
