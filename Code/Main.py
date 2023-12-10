@@ -34,14 +34,14 @@ import Conversion
 def process_geometry_file(file_path):
     with open(file_path, "r") as geometry_file:
         lines = geometry_file.readlines()
-        last_19_lines = lines[-19:]
+        
 
     with open("t.0", "w") as t0_file:
         t0_file.writelines(str(natoms)+" "+str(nstates)+"\n")
         t0_file.writelines(str(nbranch)+"\n")
         t0_file.writelines("0 "+str(timestep)+"\n")
         t0_file.writelines("0 5 \n")
-        t0_file.writelines(last_19_lines)
+        t0_file.writelines(lines)
         t0_file.writelines(" \n")
         t0_file.writelines("1.0 \n")
         t0_file.writelines("0.0 \n")
@@ -52,7 +52,7 @@ def process_geometry_file(file_path):
             tini_file.writelines(str(nbranch)+"\n")
             tini_file.writelines("0 "+str(timestep)+"\n")
             tini_file.writelines("0 5 \n")
-            tini_file.writelines(last_19_lines)        
+            tini_file.writelines(lines)        
             tini_file.writelines(" \n")
             tini_file.writelines("1.0 \n")
             tini_file.writelines("0.0 \n")
@@ -77,7 +77,6 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
     # Q-Chem input file content
     qchem_input = (
         "$molecule\n"
-        "  0  5\n"
         + "".join(geom_lines)
         + "$end\n"
         "$rem\n"
@@ -140,7 +139,7 @@ def run_qchem(ncpu):
 #  Step 1. Recieves arguements from the .sh run file
 #  Arguements recieved ncpu: number of cpus available, reps: number of the repition in order to access the right files. 
 if __name__ == "__main__":
-    if len(sys.argv) != 9:
+    if len(sys.argv) != 10:
         print("Usage: python script_name.py <reps> <noofcpus> <natoms> <nstates>")
         sys.exit(1)
 
@@ -153,7 +152,7 @@ if __name__ == "__main__":
         timestep = int(sys.argv[6])
         endstep = int(sys.argv[7])
         restart = str(sys.argv[8])
-        geom_start = int(sys.arg[9])
+        geom_start = int(sys.argv[9])
     except ValueError:
         print("Invalid number of CPUs. Please provide a valid integer.")
         sys.exit(1)
@@ -230,7 +229,7 @@ for i in range(int(startstep), endstep+1):
         # os.rmdir("wf")
         with open("t.diss1", "a") as t_diss1:
             t_diss1.write(str(i) + "\n")
-    
+
     # Transfer the contents of t.1 to t.0 to continue the propagation
     with open("t.1", "r") as t1_file, open("t.0", "w") as t0_file:
         t0_file.write(t1_file.read())

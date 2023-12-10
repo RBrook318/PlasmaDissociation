@@ -5,16 +5,16 @@
 # Geometry flag
 Geom = 1
 # Name of molecule if Geom flag (where the Geometry files are stored: Molecule>Geom>Geometry.num)
-Molecule = 'Propylene'
+Molecule = 'C4F8'
 # Number of atoms
-Atoms = 9
+Atoms = 12
 # Number of states
 States = 2
 # Branching number
 Branch = 0
-# Timestep
+# Timestep size 
 Timestep = 10
 # No of timesteps
-Tot_timesteps = 2500
+Tot_timesteps = 2100
 # Starting geometry index
 Geom_start = 1

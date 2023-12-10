@@ -27,10 +27,8 @@ import inputs
 repeats=1
 # #Number of parallel cores per folder/node (max 8)
 cores=8
-# Name of running folder 
-# Default : <method>-<system>-<random number> ie CCS-HP-31254
-# Otherwise:  <method>-<system>-<runfolder string>
-Runfolder='Restart-test'
+# Name of running folder that's created in nobackup
+Runfolder='example-name'
 # Restart Flag 
 restart = 'NO'
 
@@ -49,7 +47,7 @@ if __name__=="__main__":
         sys.exit("Number of parallel cores must be an integer")
     elif(repeats<1):
         sys.exit("Not enough runs selected. Must be 1 or greater")
-    elif(cores>8):
+    elif(cores>16):
         sys.exit("Too many cores selected. Maximum of 8 available")
     elif(cores<1):
         sys.exit("Not enough cores selected. Must be 1 or greater")
@@ -93,8 +91,9 @@ if __name__=="__main__":
             
         #Copies input files
         shutil.copy2("run.py",EXDIR1)
-        shutil.copy2("../Code/analysis/Result.py",EXDIR1)
-        shutil.copy2("../Code/analysis/Collate.py",EXDIR1)
+        shutil.copy2("../Code/Result.py",EXDIR1)
+        shutil.copy2("../Code/Collate.py",EXDIR1)
+        shutil.copy2("inputs.py",EXDIR1)
         shutil.copy2("../Code/analysis/analysis.x",EXDIR1)
 
         for i in range(repeats):
@@ -105,17 +104,60 @@ if __name__=="__main__":
             shutil.copy2("../Code/Conversion.py",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/prop_prelim.x",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/prop_corr.x",EXDIR1+"/run-"+str(i+1))
-            shutil.copy2("../Code/get_geom.x",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/q_to_prop.x",EXDIR1+"/run-"+str(i+1))
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_prelim.x'])
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_corr.x'])
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/q_to_prop.x'])
-            subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/get_geom.x'])
-
+        
                 
 
         os.chdir(EXDIR1)
         EXDIR1=os.getcwd()
+        if(HPCFLG==1):
+            number=random.randint(99999,1000000)
+            file1="qchem"+str(number)+".sh"
+            f=open(file1,"w")
+            f.write("#$ -cwd -V \n")
+            f.write("#$ -l h_vmem=1G,h_rt=00:30:00 \n")
+            f.write("#$ -N qchemlocal \n")
+            f.write("mkdir ./qchemlocal\n")
+            f.write('tar -xzvf /nobackup/cm18rb/qchem.tar.gz. -C ./qchemlocal\n')
+            f.write('qchemlocal="./qchemlocal"\n')
+            f.write('export QCHEM_HOME="$qchemlocal"\n')
+            f.write('export QC="$qchemlocal"\n')
+            f.write('export QCAUX="$QC/qcaux"\n')
+            f.write('export QCPROG="$QC/exe/qcprog.exe"\n')
+            f.write('export QCPROG_S="$QC/exe/qcprog.exe_s"\n')
+            f.write('export PATH="$PATH:$QC/exe:$QC/bin"\n')
+            f.close()
+            subprocess.call(['qsub',file1])
+            number=random.randint(99999,1000000)
+            file2="Plasma"+str(number)+".sh"
+            f=open(file2,"w")
+            f.write("#$ -cwd -V \n")
+            f.write("#$ -l h_vmem=1G,h_rt=00:00:10 \n")
+            f.write("#$ -pe smp "+str(cores)+" \n") #Use shared memory parallel environemnt 
+            f.write("#$ -t 1-"+str(repeats)+" \n")
+            f.write("module load mkl \n")
+            f.write("module load test qchem \n")
+            f.write('qchemlocal="../qchemlocal"\n')
+            f.write('export QCHEM_HOME="$qchemlocal"\n')
+            f.write('export QC="$qchemlocal"\n')
+            f.write('export QCAUX="$QC/qcaux"\n')
+            f.write('export QCPROG="$QC/exe/qcprog.exe"\n')
+            f.write('export QCPROG_S="$QC/exe/qcprog.exe_s"\n')
+            f.write('export PATH="$PATH:$QC/exe:$QC/bin"\n')
+            f.write("module load anaconda \n")
+            f.write("source activate base \n")
+            f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID \n")
+            f.write("python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart)+' '+str(inputs.Geom_start))
+            f.close()
+            if(cores!=1):
+                os.environ["OMP_NUM_THREADS"]=str(cores)
+            command = ['qsub', '-hold_jid', 'qchemlocal', file2]
+            subprocess.call(command)
+            # subprocess.call(['qsub', file2])
+                
     elif(restart=='YES'):
         print("Arguments checked")
         Hostname=socket.gethostname()
@@ -125,36 +167,36 @@ if __name__=="__main__":
             HPCFLG=1 
         else:
             HPCFLG=0
+        #If on a SGE machine make job submission file
+        EXDIR1=os.getcwd()
+        if(HPCFLG==1):
+            number=random.randint(99999,1000000)
+            file1="Plasma"+str(number)+".sh"
+            f=open(file1,"w")
+            f.write("#$ -cwd -V \n")
+            f.write("#$ -l h_vmem=1G,h_rt=48:00:00 \n")
+            f.write("#$ -pe smp "+str(cores)+" \n") #Use shared memory parallel environemnt 
+            f.write("#$ -t 1-"+str(repeats)+" \n")
+            f.write("module load mkl \n")
+            f.write("module load test qchem \n")
+            f.write('qchemlocal="../qchemlocal"\n')
+            f.write('export QCHEM_HOME="$qchemlocal"\n')
+            f.write('export QC="$qchemlocal"\n')
+            f.write('export QCAUX="$QC/qcaux"\n')
+            f.write('export QCPROG="$QC/exe/qcprog.exe"\n')
+            f.write('export QCPROG_S="$QC/exe/qcprog.exe_s"\n')
+            f.write('export PATH="$PATH:$QC/exe:$QC/bin"\n')
+            f.write("module load anaconda \n")
+            f.write("source activate base \n")
+            f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
+            f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart)+' '+str(inputs.Geom_start))
+            f.close()
+            # if(cores!=1):
+            #     os.environ["OMP_NUM_THREADS"]=str(cores)
+            subprocess.call(['qsub',file1])
 
-        EXDIR1 = os.getcwd()
-
-       
-
-    # END OF THE RESTART=0 loop
-
-        
-    #If on a SGE machine make job submission file
-    if(HPCFLG==1):
-        number=random.randint(99999,1000000)
-        file1="Plasma"+str(number)+".sh"
-        f=open(file1,"w")
-        f.write("#$ -cwd -V \n")
-        f.write("#$ -l h_vmem=1G,h_rt=00:05:00 \n")
-        f.write("#$ -pe smp "+str(cores)+" \n") #Use shared memory parallel environemnt 
-        f.write("#$ -t 1-"+str(repeats)+" \n")
-        f.write("module load mkl \n")
-        f.write("module load test qchem \n")
-        f.write("module load anaconda \n")
-        f.write("source actviate base \n")
-        f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
-        f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart)+' '+str(inputs.Geom_start))
-        f.close()
-        # if(cores!=1):
-        #     os.environ["OMP_NUM_THREADS"]=str(cores)
-        subprocess.call(['qsub',file1])
-
-    else:
-        print('Probably dont run this here')
-        
+        else:
+            print('Probably dont run this here')
+            
 
     

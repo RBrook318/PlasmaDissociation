@@ -1,6 +1,6 @@
-import numpy as np 
 import re
-import math 
+import numpy as np 
+import math
 def convert_to_bohr_units(r0_angstrom):
     # Convert coordinates from Angstrom to Bohr units
     bohr_conversion_factor = 0.529177
@@ -11,11 +11,11 @@ def make_geometry_input(inp):
         lines = file.readlines()
 
     natom, nst = map(int, lines[0].split())
-
+    mc, mult = map(int, lines[3].split())
     # Write the geometry data to geom.in
     with open("geom.in", "w") as geom_file:
-        geom_file.write(f"{natom:2d} {nst:2d}\n")
-
+        # geom_file.write(f"{natom:2d} {nst:2d}\n")
+        geom_file.write(f"{mc:2d} {mult:2d}\n")
         current_line = 4  # Start with the first line after the header
 
         for _ in range(natom):
@@ -30,6 +30,15 @@ def make_geometry_input(inp):
                 print(f"WARNING: Skipping improperly formatted line: {line}")
             current_line += 1
 
+def find_line(filename, target_line):
+    try:
+        with open(filename, 'r') as file:
+            for line in file:
+                if target_line in line:
+                    return line.strip(), line.split()  # Return the found line and its content
+    except FileNotFoundError:
+        print("File not found:", filename)
+        return None, None
 
 def q_to_prop(output_file):
     try:
@@ -95,19 +104,16 @@ def q_to_prop(output_file):
         f = -f
         f = np.where(f == -0.0, 0.0, f)
         with open(output_file, "a") as out:
-            out.write(" \n")
-            out.write(" \n")
             for i in range(nst):
                 out.write(f'{e[i]:.16e} {i:8d}\n')
             out.write(" \n")
-            for i in range(2*ndim):
+            for i in range(0,2*ndim):
                 if i<ndim:
-                    out.write(f'{f[0, i]:.16e} 1 {i}\n')
+                    print(i)
+                    out.write(f'{f[0, i]:.16e} 1 {i+1}\n')
                 if i>=ndim:
-                    out.write(f'{f[0, i]:.16e} 2 {i-ndim}\n')
+                    print(i,'2')
+                    out.write(f'{f[0, i]:.16e} 2 {i-ndim+1}\n')
             out.write(" \n")
             for i in range(ndim):
                 out.write(f'{C[0, i]:.16e} 1 2 {i+1}\n')
-
-
-
