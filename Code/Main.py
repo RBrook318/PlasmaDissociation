@@ -69,7 +69,7 @@ def file_contains_string(file_path, search_string):
     with open(file_path, "r") as file:
         return search_string in file.read()
 
-def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
+def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS",Guess=True):
     # Read the geometry data from geom.in
     with open(geom_file_path, "r") as geom_file:
         geom_lines = geom_file.readlines()
@@ -92,6 +92,12 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
         "    SET_Iter            500\n"
         "\n"
         "    MAX_CIS_CYCLES      500\n"
+        )
+    # Add SCF_GUESS line if Guess is True
+    if Guess:
+        qchem_input += "    SCF_GUESS           Read\n"
+
+    qchem_input += (
         "\n"
         "CIS_N_ROOTS 1\n"
         "CIS_STATE_DERIV 1\n"
@@ -105,21 +111,21 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS"):
 
 
 
-def run_qchem(ncpu):
+def run_qchem(ncpu,Guess=True):
 
     def submit_qchem_job():
         subprocess.run(["qchem", "-save", "-nt", str(ncpu), "f.inp", "f.out", "wf"])
 
 
     # Prepare f.inp file
-    create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS")
+    create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS",Guess=Guess)
 
     # Submit the initial QChem job
     submit_qchem_job()
 
     if not file_contains_string("f.out", "Calculating analytic gradient of the CIS energy"):
         # Retry with a different setup if the job fails
-        create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS_GDM")
+        create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS_GDM",Guess =False)
         submit_qchem_job()
 
         if not file_contains_string("f.out", "Calculating analytic gradient of the CIS energy"):
@@ -165,7 +171,7 @@ if(restart == 'NO'):
     #  Step 3. Submit the qchem job (and the second if the first one fails)
 
     Conversion.make_geometry_input('t.0')
-    run_qchem(ncpu)
+    run_qchem(ncpu,Guess=False)
     # Conversion.q_to_prop('t.0')
     command = ["./q_to_prop.x"]
     with open("t.0", "a") as output_file:
@@ -179,11 +185,23 @@ if(restart == 'NO'):
         t1_all.write(t0_file.read())
         t1_all.write("---------------------------------------------------\n")
     startstep = 1
+
+
 elif (restart == 'YES'):
-    with open('t.0', 'r') as file:
-        lines = file.readlines()
-        third_row = lines[2].strip().split()
-        startstep = float(third_row[0])/timestep
+    file_path = 't.0'
+
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+            if len(lines) >= 3:
+                third_row = lines[2].strip().split()
+                startstep = float(third_row[0]) / timestep
+            else:
+                # Handle the case where the file doesn't have at least 3 lines
+                startstep = 1.0
+    else:
+        # Handle the case where the file doesn't exist
+        startstep = 1.0
 
 
 
@@ -199,7 +217,7 @@ for i in range(int(startstep), endstep+1):
     Conversion.make_geometry_input('t.p')
     
     #  Step 7. Submit the qchem job (and the second one if it fails)
-    run_qchem(ncpu)
+    run_qchem(ncpu,Guess=True)
 
     # Step 8. Translate from angstroms to bohr
 

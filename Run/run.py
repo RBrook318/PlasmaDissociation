@@ -135,7 +135,7 @@ if __name__=="__main__":
             file2="Plasma"+str(number)+".sh"
             f=open(file2,"w")
             f.write("#$ -cwd -V \n")
-            f.write("#$ -l h_vmem=1G,h_rt=00:00:10 \n")
+            f.write("#$ -l h_vmem=1G,h_rt=48:00:00 \n")
             f.write("#$ -pe smp "+str(cores)+" \n") #Use shared memory parallel environemnt 
             f.write("#$ -t 1-"+str(repeats)+" \n")
             f.write("module load mkl \n")
