@@ -24,11 +24,11 @@ import inputs
 #########################################################################################
 
 # Number of repeats 
-repeats=1
+repeats=300
 # #Number of parallel cores per folder/node (max 8)
 cores=8
 # Name of running folder that's created in nobackup
-Runfolder='example-name'
+Runfolder='C5F10O-b'
 # Restart Flag 
 restart = 'NO'
 
@@ -114,23 +114,23 @@ if __name__=="__main__":
         os.chdir(EXDIR1)
         EXDIR1=os.getcwd()
         if(HPCFLG==1):
-            number=random.randint(99999,1000000)
-            file1="qchem"+str(number)+".sh"
-            f=open(file1,"w")
-            f.write("#$ -cwd -V \n")
-            f.write("#$ -l h_vmem=1G,h_rt=00:30:00 \n")
-            f.write("#$ -N qchemlocal \n")
-            f.write("mkdir ./qchemlocal\n")
-            f.write('tar -xzvf /nobackup/cm18rb/qchem.tar.gz. -C ./qchemlocal\n')
-            f.write('qchemlocal="./qchemlocal"\n')
-            f.write('export QCHEM_HOME="$qchemlocal"\n')
-            f.write('export QC="$qchemlocal"\n')
-            f.write('export QCAUX="$QC/qcaux"\n')
-            f.write('export QCPROG="$QC/exe/qcprog.exe"\n')
-            f.write('export QCPROG_S="$QC/exe/qcprog.exe_s"\n')
-            f.write('export PATH="$PATH:$QC/exe:$QC/bin"\n')
-            f.close()
-            subprocess.call(['qsub',file1])
+            # number=random.randint(99999,1000000)
+            # file1="qchem"+str(number)+".sh"
+            # f=open(file1,"w")
+            # f.write("#$ -cwd -V \n")
+            # f.write("#$ -l h_vmem=1G,h_rt=00:30:00 \n")
+            # f.write("#$ -N qchemlocal \n")
+            # f.write("mkdir ./qchemlocal\n")
+            # f.write('tar -xzvf /nobackup/cm18rb/qchem.tar.gz. -C $TMPDIR\n')
+            # f.write('qchemlocal=$TMPDIR/qchemlocal\n')
+            # f.write('export QCHEM_HOME="$qchemlocal"\n')
+            # f.write('export QC="$qchemlocal"\n')
+            # f.write('export QCAUX="$QC/qcaux"\n')
+            # f.write('export QCPROG="$QC/exe/qcprog.exe"\n')
+            # f.write('export QCPROG_S="$QC/exe/qcprog.exe_s"\n')
+            # f.write('export PATH="$PATH:$QC/exe:$QC/bin"\n')
+            # f.close()
+            # subprocess.call(['qsub',file1])
             number=random.randint(99999,1000000)
             file2="Plasma"+str(number)+".sh"
             f=open(file2,"w")
@@ -140,7 +140,9 @@ if __name__=="__main__":
             f.write("#$ -t 1-"+str(repeats)+" \n")
             f.write("module load mkl \n")
             f.write("module load test qchem \n")
-            f.write('qchemlocal="../qchemlocal"\n')
+            f.write("mkdir $TMPDIR/qchemlocal\n")
+            f.write('tar -xzvf /nobackup/cm18rb/qchem.tar.gz. -C $TMPDIR/qchemlocal\n')
+            f.write('qchemlocal=$TMPDIR/qchemlocal\n')
             f.write('export QCHEM_HOME="$qchemlocal"\n')
             f.write('export QC="$qchemlocal"\n')
             f.write('export QCAUX="$QC/qcaux"\n')
@@ -179,7 +181,9 @@ if __name__=="__main__":
             f.write("#$ -t 1-"+str(repeats)+" \n")
             f.write("module load mkl \n")
             f.write("module load test qchem \n")
-            f.write('qchemlocal="../qchemlocal"\n')
+            f.write("mkdir $TMPDIR/qchemlocal\n")
+            f.write('tar -xzvf /nobackup/cm18rb/qchem.tar.gz. -C $TMPDIR/qchemlocal\n')
+            f.write('qchemlocal=$TMPDIR/qchemlocal\n')
             f.write('export QCHEM_HOME="$qchemlocal"\n')
             f.write('export QC="$qchemlocal"\n')
             f.write('export QCAUX="$QC/qcaux"\n')

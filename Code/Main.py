@@ -201,7 +201,25 @@ elif (restart == 'YES'):
                 startstep = 1.0
     else:
         # Handle the case where the file doesn't exist
-        startstep = 1.0
+        process_geometry_file("Geometry."+str(reps+geom_start-1)) 
+
+        #  Step 3. Submit the qchem job (and the second if the first one fails)
+
+        Conversion.make_geometry_input('t.0')
+        run_qchem(ncpu,Guess=False)
+        # Conversion.q_to_prop('t.0')
+        command = ["./q_to_prop.x"]
+        with open("t.0", "a") as output_file:
+            try:
+                # Execute the command as a subprocess
+                subprocess.run(command, stdout=output_file, check=True)
+                print("Command executed successfully.")
+            except subprocess.CalledProcessError as e:
+                print("Command execution failed with error:", e)
+        with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
+            t1_all.write(t0_file.read())
+            t1_all.write("---------------------------------------------------\n")
+        startstep = 1
 
 
 
