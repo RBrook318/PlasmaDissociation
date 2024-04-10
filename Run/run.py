@@ -193,7 +193,7 @@ if __name__=="__main__":
             f.write("module load anaconda \n")
             f.write("source activate base \n")
             f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
-            f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart)+' '+str(inputs.Geom_start))
+            f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+' '+str(restart)+' '+str(inputs.Geom_start)+''+str(inputs.Spin_flip))
             f.close()
             # if(cores!=1):
             #     os.environ["OMP_NUM_THREADS"]=str(cores)

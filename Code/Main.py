@@ -31,7 +31,7 @@ import Conversion
 
 # !!!! Defining functions !!!!
 
-def process_geometry_file(file_path):
+def process_geometry_file(file_path,spin_flip):
     with open(file_path, "r") as geometry_file:
         lines = geometry_file.readlines()
         
@@ -40,7 +40,10 @@ def process_geometry_file(file_path):
         t0_file.writelines(str(natoms)+" "+str(nstates)+"\n")
         t0_file.writelines(str(nbranch)+"\n")
         t0_file.writelines("0 "+str(timestep)+"\n")
-        t0_file.writelines("0 5 \n")
+        if spin_flip == 0: 
+            t0_file.writelines("0 3 \n")
+        elif spin_flip == 1:
+            t0_file.writelines("0 5 \n")
         t0_file.writelines(lines)
         t0_file.writelines(" \n")
         t0_file.writelines("1.0 \n")
@@ -69,7 +72,7 @@ def file_contains_string(file_path, search_string):
     with open(file_path, "r") as file:
         return search_string in file.read()
 
-def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS",Guess=True):
+def create_qchem_input(output_file, geom_file_path, spin_flip, scf_algorithm="DIIS",Guess=True):
     # Read the geometry data from geom.in
     with open(geom_file_path, "r") as geom_file:
         geom_lines = geom_file.readlines()
@@ -88,7 +91,12 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS",Guess=T
         "    SYM_IGNORE          True\n"
         f"    SCF_Algorithm       {scf_algorithm}\n"  # Use the specified SCF algorithm
         "\n"
-        "    SPIN_FLIP           True\n"
+    )
+    # Use spin flip if method chosen 
+    if spin_flip==1:
+        qchem_input += "    SPIN_FLIP           True\n"
+
+    qchem_input += (
         "    SET_Iter            500\n"
         "\n"
         "    MAX_CIS_CYCLES      500\n"
@@ -111,14 +119,14 @@ def create_qchem_input(output_file, geom_file_path, scf_algorithm="DIIS",Guess=T
 
 
 
-def run_qchem(ncpu,Guess=True):
+def run_qchem(ncpu,spin_flip,Guess=True):
 
     def submit_qchem_job():
         subprocess.run(["qchem", "-save", "-nt", str(ncpu), "f.inp", "f.out", "wf"])
 
 
     # Prepare f.inp file
-    create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS",Guess=Guess)
+    create_qchem_input("f.inp", "geom.in",spin_flip, scf_algorithm="DIIS",Guess=Guess)
 
     # Submit the initial QChem job
     submit_qchem_job()
@@ -145,7 +153,7 @@ def run_qchem(ncpu,Guess=True):
 #  Step 1. Recieves arguements from the .sh run file
 #  Arguements recieved ncpu: number of cpus available, reps: number of the repition in order to access the right files. 
 if __name__ == "__main__":
-    if len(sys.argv) != 10:
+    if len(sys.argv) != 11:
         print("Usage: python script_name.py <reps> <noofcpus> <natoms> <nstates>")
         sys.exit(1)
 
@@ -159,6 +167,7 @@ if __name__ == "__main__":
         endstep = int(sys.argv[7])
         restart = str(sys.argv[8])
         geom_start = int(sys.argv[9])
+        spin_flip = int(sys.argv[10])
     except ValueError:
         print("Invalid number of CPUs. Please provide a valid integer.")
         sys.exit(1)
@@ -227,7 +236,7 @@ elif (restart == 'YES'):
 #   Step 9. Repeat steps 6-10 until complete
 
 for i in range(int(startstep), endstep+1):
-    # os.rename("t.1", "t.0") NEEDS TO BE AT THE END OF THE LOOP?
+
 
     #   Step 6. Begin propagation by taking the preliminary timestep 
 
@@ -235,7 +244,7 @@ for i in range(int(startstep), endstep+1):
     Conversion.make_geometry_input('t.p')
     
     #  Step 7. Submit the qchem job (and the second one if it fails)
-    run_qchem(ncpu,Guess=True)
+    run_qchem(ncpu,spin_flip,Guess=True,)
 
     # Step 8. Translate from angstroms to bohr
 
