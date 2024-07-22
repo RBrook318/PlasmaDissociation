@@ -3,19 +3,21 @@ import shutil
 import subprocess
 import sys 
 
-reps = 100
+reps = 500
 
 def detect_dissociation(input_file, output_file):
     # Define the array denoting bonded molecules
     bonded_array = [
         [1, 2],
         [1, 3],
-        [1, 4],
-        [1, 5],
-        [5, 6],
-        [5, 7],
-        [7, 8],
-        [7, 9]
+        [3, 8],
+        [3, 9],
+        [3, 4],
+        [1, 11],
+        [1, 10],
+        [4, 5],
+        [4, 6],
+        [4, 7]
         # Add more bonded pairs as needed
     ]
 
@@ -70,7 +72,7 @@ def process_molecular_coordinates(input_file_path, output_file_path):
             if not line or line.startswith('#'):
                 continue  # Skip empty lines and comments
 
-            if line.startswith('C') or line.startswith('F'):
+            if line.startswith('C') or line.startswith('F') or line.startswith('H'):
                 parts = line.split()
                 if len(parts) == 4:  # Assuming "Symbol x y z" format
                     symbol, x, y, z = parts
@@ -96,7 +98,7 @@ EXDIR= os.getcwd()
 for i in range(1,reps+1):
     EXDIR1 = 'run-'+str(i)
     shutil.copy2("analysis.x", EXDIR1)
-    # subprocess.run(['chmod', 'u+x', "../t"+str(i+1)+'/analysis.x'])
+    subprocess.run(['chmod', 'u+x', "run-"+str(i)+'/analysis.x'])
     os.chdir(EXDIR1)
     subprocess.run(["./analysis.x", "t"])
     process_molecular_coordinates('t.xyz', 'output.xyz')

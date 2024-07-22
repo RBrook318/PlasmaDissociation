@@ -24,11 +24,11 @@ import inputs
 #########################################################################################
 
 # Number of repeats 
-repeats=300
+repeats=1
 # #Number of parallel cores per folder/node (max 8)
 cores=8
 # Name of running folder that's created in nobackup
-Runfolder='C5F10O-b'
+Runfolder='AAA-i-isomer-Dima-test'
 # Restart Flag 
 restart = 'NO'
 
@@ -105,9 +105,11 @@ if __name__=="__main__":
             shutil.copy2("../Code/prop_prelim.x",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/prop_corr.x",EXDIR1+"/run-"+str(i+1))
             shutil.copy2("../Code/q_to_prop.x",EXDIR1+"/run-"+str(i+1))
+            shutil.copy2("../Code/q_to_propSCF.x",EXDIR1+"/run-"+str(i+1))
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_prelim.x'])
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/prop_corr.x'])
             subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/q_to_prop.x'])
+            subprocess.run(['chmod', 'u+x', EXDIR1+"/run-"+str(i+1)+'/q_to_propSCF.x'])
         
                 
 
@@ -135,13 +137,13 @@ if __name__=="__main__":
             file2="Plasma"+str(number)+".sh"
             f=open(file2,"w")
             f.write("#$ -cwd -V \n")
-            f.write("#$ -l h_vmem=1G,h_rt=48:00:00 \n")
+            f.write("#$ -l h_vmem=1G,h_rt=24:00:00 \n")
             f.write("#$ -pe smp "+str(cores)+" \n") #Use shared memory parallel environemnt 
             f.write("#$ -t 1-"+str(repeats)+" \n")
             f.write("module load mkl \n")
             f.write("module load test qchem \n")
             f.write("mkdir $TMPDIR/qchemlocal\n")
-            f.write('tar -xzvf /nobackup/cm18rb/qchem.tar.gz. -C $TMPDIR/qchemlocal\n')
+            f.write('tar -xzvf /nobackup/cm18rb/qchem.tar.gz -C $TMPDIR/qchemlocal\n')
             f.write('qchemlocal=$TMPDIR/qchemlocal\n')
             f.write('export QCHEM_HOME="$qchemlocal"\n')
             f.write('export QC="$qchemlocal"\n')
@@ -152,7 +154,7 @@ if __name__=="__main__":
             f.write("module load anaconda \n")
             f.write("source activate base \n")
             f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID \n")
-            f.write("python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart)+' '+str(inputs.Geom_start))
+            f.write("python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+" "+str(restart)+' '+str(inputs.Geom_start)+' '+str(inputs.Spin_flip)+' '+str(inputs.Theory))
             f.close()
             if(cores!=1):
                 os.environ["OMP_NUM_THREADS"]=str(cores)
@@ -193,7 +195,7 @@ if __name__=="__main__":
             f.write("module load anaconda \n")
             f.write("source activate base \n")
             f.write("cd "+EXDIR1+"/run-$SGE_TASK_ID/ \n")
-            f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+' '+str(restart)+' '+str(inputs.Geom_start)+''+str(inputs.Spin_flip))
+            f.write(" python Main.py "+"$SGE_TASK_ID"+" "+str(cores)+" "+str(inputs.Atoms)+" "+str(inputs.States)+" "+str(inputs.Branch)+" "+str(inputs.Timestep)+" "+str(inputs.Tot_timesteps)+' '+str(restart)+' '+str(inputs.Geom_start)+''+str(inputs.Spin_flip)+' '+str(inputs.Theory))
             f.close()
             # if(cores!=1):
             #     os.environ["OMP_NUM_THREADS"]=str(cores)

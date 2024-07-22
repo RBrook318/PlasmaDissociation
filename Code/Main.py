@@ -72,7 +72,7 @@ def file_contains_string(file_path, search_string):
     with open(file_path, "r") as file:
         return search_string in file.read()
 
-def create_qchem_input(output_file, geom_file_path, spin_flip, scf_algorithm="DIIS",Guess=True):
+def create_qchem_input(output_file, geom_file_path, spin_flip,theory, scf_algorithm="DIIS",Guess=True):
     # Read the geometry data from geom.in
     with open(geom_file_path, "r") as geom_file:
         geom_lines = geom_file.readlines()
@@ -105,13 +105,13 @@ def create_qchem_input(output_file, geom_file_path, spin_flip, scf_algorithm="DI
     if Guess:
         qchem_input += "    SCF_GUESS           Read\n"
 
-    qchem_input += (
-        "\n"
-        "CIS_N_ROOTS 1\n"
-        "CIS_STATE_DERIV 1\n"
-        "$end\n"
-    )
-
+    if theory ==1:
+        qchem_input += (
+            "\n"
+            "CIS_N_ROOTS 1\n"
+            "CIS_STATE_DERIV 1\n"
+        )
+    qchem_input += "$end\n"
     # Write the Q-Chem input content to the output file
     with open(output_file, "w") as qchem_file:
         qchem_file.write(qchem_input)
@@ -119,24 +119,24 @@ def create_qchem_input(output_file, geom_file_path, spin_flip, scf_algorithm="DI
 
 
 
-def run_qchem(ncpu,spin_flip,Guess=True):
+def run_qchem(ncpu,spin_flip,theory,Guess=True):
 
     def submit_qchem_job():
         subprocess.run(["qchem", "-save", "-nt", str(ncpu), "f.inp", "f.out", "wf"])
 
 
     # Prepare f.inp file
-    create_qchem_input("f.inp", "geom.in",spin_flip, scf_algorithm="DIIS",Guess=Guess)
+    create_qchem_input("f.inp", "geom.in",spin_flip,theory, scf_algorithm="DIIS",Guess=Guess)
 
     # Submit the initial QChem job
     submit_qchem_job()
 
-    if not file_contains_string("f.out", "Calculating analytic gradient of the CIS energy"):
+    if not file_contains_string("f.out", " Total job time:"):
         # Retry with a different setup if the job fails
-        create_qchem_input("f.inp", "geom.in", scf_algorithm="DIIS_GDM",Guess =False)
+        create_qchem_input("f.inp", "geom.in", spin_flip,theory,scf_algorithm="DIIS_GDM",Guess =False)
         submit_qchem_job()
 
-        if not file_contains_string("f.out", "Calculating analytic gradient of the CIS energy"):
+        if not file_contains_string("f.out", " Total job time:"):
             # Job failed both times, print error and exit
             write_content_to_file("ERROR", "Error occurred during QChem job.\n" + os.getcwd())
             exit(1)
@@ -153,8 +153,9 @@ def run_qchem(ncpu,spin_flip,Guess=True):
 #  Step 1. Recieves arguements from the .sh run file
 #  Arguements recieved ncpu: number of cpus available, reps: number of the repition in order to access the right files. 
 if __name__ == "__main__":
-    if len(sys.argv) != 11:
+    if len(sys.argv) != 12:
         print("Usage: python script_name.py <reps> <noofcpus> <natoms> <nstates>")
+        print(len(sys.argv))
         sys.exit(1)
 
     try:
@@ -168,6 +169,7 @@ if __name__ == "__main__":
         restart = str(sys.argv[8])
         geom_start = int(sys.argv[9])
         spin_flip = int(sys.argv[10])
+        theory = int(sys.argv[11])
     except ValueError:
         print("Invalid number of CPUs. Please provide a valid integer.")
         sys.exit(1)
@@ -175,24 +177,37 @@ if __name__ == "__main__":
 #  Step 2. Read in geometries from the geom input file
 #  Needs to take in a geometry.reps file and makes the output t.ini and t.0 file.
 if(restart == 'NO'):
-    process_geometry_file("Geometry."+str(reps+geom_start-1)) 
+    process_geometry_file("Geometry."+str(reps+geom_start-1),spin_flip) 
 
     #  Step 3. Submit the qchem job (and the second if the first one fails)
 
     Conversion.make_geometry_input('t.0')
-    run_qchem(ncpu,Guess=False)
+    run_qchem(ncpu,spin_flip,theory,Guess=False)
     # Conversion.q_to_prop('t.0')
-    command = ["./q_to_prop.x"]
-    with open("t.0", "a") as output_file:
-        try:
-            # Execute the command as a subprocess
-            subprocess.run(command, stdout=output_file, check=True)
-            print("Command executed successfully.")
-        except subprocess.CalledProcessError as e:
-            print("Command execution failed with error:", e)
-    with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
-        t1_all.write(t0_file.read())
-        t1_all.write("---------------------------------------------------\n")
+    if theory==1:
+        command = ["./q_to_prop.x"]
+        with open("t.0", "a") as output_file:
+            try:
+                # Execute the command as a subprocess
+                subprocess.run(command, stdout=output_file, check=True)
+                print("Command executed successfully.")
+            except subprocess.CalledProcessError as e:
+                print("Command execution failed with error:", e)
+        with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
+            t1_all.write(t0_file.read())
+            t1_all.write("---------------------------------------------------\n")
+    elif theory==0:
+        command = ["./q_to_propSCF.x"]
+        with open("t.0", "a") as output_file:
+            try:
+                # Execute the command as a subprocess
+                subprocess.run(command, stdout=output_file, check=True)
+                print("Command executed successfully.")
+            except subprocess.CalledProcessError as e:
+                print("Command execution failed with error:", e)
+        with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
+            t1_all.write(t0_file.read())
+            t1_all.write("---------------------------------------------------\n")
     startstep = 1
 
 
@@ -210,28 +225,20 @@ elif (restart == 'YES'):
                 startstep = 1.0
     else:
         # Handle the case where the file doesn't exist
-        process_geometry_file("Geometry."+str(reps+geom_start-1)) 
+        process_geometry_file("Geometry."+str(reps+geom_start-1),spin_flip) 
 
         #  Step 3. Submit the qchem job (and the second if the first one fails)
 
         Conversion.make_geometry_input('t.0')
-        run_qchem(ncpu,Guess=False)
+        run_qchem(ncpu,spin_flip,theory,Guess=False)
         # Conversion.q_to_prop('t.0')
-        command = ["./q_to_prop.x"]
-        with open("t.0", "a") as output_file:
-            try:
-                # Execute the command as a subprocess
-                subprocess.run(command, stdout=output_file, check=True)
-                print("Command executed successfully.")
-            except subprocess.CalledProcessError as e:
-                print("Command execution failed with error:", e)
-        with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
-            t1_all.write(t0_file.read())
-            t1_all.write("---------------------------------------------------\n")
+
         startstep = 1
 
 
-
+if theory==0:
+    correct_mult = 3
+    old_mult = 3
 
 #   Step 9. Repeat steps 6-10 until complete
 
@@ -244,22 +251,60 @@ for i in range(int(startstep), endstep+1):
     Conversion.make_geometry_input('t.p')
     
     #  Step 7. Submit the qchem job (and the second one if it fails)
-    run_qchem(ncpu,spin_flip,Guess=True,)
+    run_qchem(ncpu,spin_flip,theory,Guess=True)
 
     # Step 8. Translate from angstroms to bohr
 
     # Conversion.q_to_prop('t.p')
-    command = ["./q_to_prop.x"]
-    with open("t.p", "a") as output_file:
-        try:
-            # Execute the command as a subprocess
-            subprocess.run(command, stdout=output_file, check=True)
-            print("Command executed successfully.")
-        except subprocess.CalledProcessError as e:
-            print("Command execution failed with error:", e)
+    if theory==1:
+        command = ["./q_to_prop.x"]
+        with open("t.p", "a") as output_file:
+            try:
+                # Execute the command as a subprocess
+                subprocess.run(command, stdout=output_file, check=True)
+                print("Command executed successfully.")
+            except subprocess.CalledProcessError as e:
+                print("Command execution failed with error:", e)
+        # with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
+        #     t1_all.write(t0_file.read())
+        #     t1_all.write("---------------------------------------------------\n")
+    elif theory==0:
+        command = ["./q_to_propSCF.x"]
+        with open("t.p", "a") as output_file:
+            try:
+                # Execute the command as a subprocess
+                subprocess.run(command, stdout=output_file, check=True)
+                print("Command executed successfully.")
+            except subprocess.CalledProcessError as e:
+                print("Command execution failed with error:", e)
+        # with open("t.0", "r") as t0_file, open("t1.all", "a") as t1_all:
+        #     t1_all.write(t0_file.read())
+        #     t1_all.write("---------------------------------------------------\n")
+    
     subprocess.run(["./prop_corr.x", "t"])
     
+    if theory==0:
+        with open("t.1","r") as file:
+            lines = file.readlines()
+            fourth_line = lines[3]  
+            print(fourth_line)
+            numbers = fourth_line.split()
+            mult = int(numbers[1])
+            print(mult)
+            print(old_mult)
+            if mult != old_mult:
+                mult = correct_mult -1 
+                correct_mult = correct_mult -1 
+                if mult ==0:
+                    mult == 1
+                lines[3] = f"{numbers[0]} {mult}\n"
+                print(lines[3])
 
+                with open("t.1", "w") as file:
+                    file.writelines(lines)
+            print(mult)
+            old_mult = mult
+            
     # Append t.1 content to t1.all
     with open("t.1", "r") as t1_file, open("t1.all", "a") as t1_all:
         t1_all.write(t1_file.read())
